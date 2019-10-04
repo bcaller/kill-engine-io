@@ -4,13 +4,19 @@ import time
 import requests
 
 
+def repeat_packet(packet, total_length):
+    repetitions = total_length // len(packet)
+    return packet * repetitions
+
+
 def standard_payload(total_length):
     # 4 means MESSAGE in engineio (data[0])
     # 2 means EVENT (non-binary) in socketio (data[1])
     # data_length : data
-    packet = '40:42["my event",{"data":"I\'m connected!"}]'
-    repetitions = total_length // len(packet)
-    return packet * repetitions
+    return repeat_packet(
+        '40:42["my event",{"data":"I\'m connected!"}]',
+        total_length,
+    )
 
 
 def giant_packet(total_length):
@@ -31,15 +37,17 @@ def many_tiny_packets(total_length, bad_utf8=False):
     # But previously putting a character >0x80 in data
     # slowed down encoded_payload.decode('utf-8', errors='ignore') even more
     # The bad_utf8 issue has now been fixed in python-engineio master
-    packet = '2:4\xbc' if bad_utf8 else '2:42'
-    repetitions = total_length // len(packet)
-    return packet * repetitions
+    return repeat_packet(
+        '2:4\xbc' if bad_utf8 else '2:42',
+        total_length,
+    )
 
 
 def many_heartbeats(total_length):
-    packet = '1:2'
-    repetitions = total_length // len(packet)
-    return packet * repetitions
+    return repeat_packet(
+        '1:2',
+        total_length,
+    )
 
 
 def timestr():

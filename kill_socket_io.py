@@ -36,6 +36,12 @@ def many_tiny_packets(total_length, bad_utf8=False):
     return packet * repetitions
 
 
+def many_heartbeats(total_length):
+    packet = '1:2'
+    repetitions = total_length // len(packet)
+    return packet * repetitions
+
+
 def timestr():
     return "&t=" + str(time.time())
 

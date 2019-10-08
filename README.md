@@ -1,7 +1,7 @@
 # kill-engine-io
-DoS [python-engineio](https://github.com/miguelgrinberg/python-engineio) / [python-socketio](https://github.com/miguelgrinberg/python-socketio) / [Flask-SocketIO](https://github.com/miguelgrinberg/Flask-SocketIO) via the long polling transport. Also nodejs [socket.io-parser](https://github.com/socketio/socket.io-parser) can be DoSed via the same transport.
+DoS [python-engineio](https://github.com/miguelgrinberg/python-engineio) / [python-socketio](https://github.com/miguelgrinberg/python-socketio) / [Flask-SocketIO](https://github.com/miguelgrinberg/Flask-SocketIO) via the long polling transport with a single POST request. Also nodejs [socket.io-parser](https://github.com/socketio/socket.io-parser) can be DoSed via the same transport.
 
-By default engineio's `max_http_buffer_size` is set to [1e8](https://github.com/miguelgrinberg/python-engineio/blob/bb2401354c3b7c3cf6a5577db83cc51ae071836e/engineio/server.py#L84) bytes.
+By default engineio's `max_http_buffer_size` is set to [1e8 = 100MB](https://github.com/miguelgrinberg/python-engineio/blob/bb2401354c3b7c3cf6a5577db83cc51ae071836e/engineio/server.py#L84) bytes.
 This is the maximum size of a request to the long polling transport.
 The comment at [payload.py](https://github.com/miguelgrinberg/python-engineio/blob/bb2401354c3b7c3cf6a5577db83cc51ae071836e/engineio/payload.py#L65)
 alludes to a DoS vulnerability.
@@ -26,13 +26,15 @@ Payload: `2:4¼2:4¼2:4¼2:4¼2:4¼2:4¼...`
 
 Versions above 3.9.3 don't use `errors='ignore'` so we don't put non-ASCII characters in.
 
-Payload: `2:422:422:422:422:422:42...`
+Payload `many_tiny_packets`: `2:422:422:422:422:422:42...`
 
 An alternative is to send one giant packet with an integer payload:
 
-Payload: `99999991:42222222222222222222...`
+Payload `giant_packet`: `99999991:42222222222222222222...`
 
 which abuses the socketio protocol [see python-socketio](https://github.com/miguelgrinberg/python-socketio/blob/a839a36fa0fa7f0e5d8976ff47b217f6b1e8a44b/socketio/packet.py#L109).
+
+## NodeJS specifics
 
 The NodeJS implementation of [engineio-parser](https://github.com/socketio/engine.io-parser) appears much faster and less easy to DoS. Node implementations have non-hexadecimal characters in the session id, so you should be able to instantly see if the server is python backed or not.
 
@@ -66,6 +68,10 @@ Node.js report completed
 [1]    9877 abort (core dumped)  node serve.js
 ```
 
+With `many_tiny_packets`, the node process OOMs because of [a 2016 change to socket.io](https://github.com/socketio/socket.io/commit/e60bd5a4da9173acba7553c9e631b79770a8c8be) so that while extracting message packets from a payload, each packet is queued up with a nice closure waiting in a `FixedCircularBuffer` for the next tick before the packet handlers can run. Of course, the next tick doesn't come until after every packet has been queued.
+
+With `many_heartbeats` (`1:21:21:21:21:21:21:21:21:2...`), each ping causes the server to create a pong packet object and add it to a buffer array. These buffered pong responses and their handling cause the OOM.
+
 ## Run
 
 Start test server with `python serve.py` or `python serve.py 2>/dev/null`.
@@ -80,3 +86,4 @@ For nodejs, install `npm install socket.io` and run `node serve.js` or `DEBUG=so
 * Use SockJS instead of SocketIO
 * Set `max_http_buffer_size` to a sensible value
 * Improve library performance
+* Restrict number of packets per payload (doesn't protect from `giant_packet`)

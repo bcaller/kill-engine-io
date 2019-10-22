@@ -1,0 +1,6 @@
+FROM python:3.7-slim
+
+RUN pip install requests
+COPY kill_socket_io.py kill_socket_io.py
+
+CMD ["python", "-i", "kill_socket_io.py"]

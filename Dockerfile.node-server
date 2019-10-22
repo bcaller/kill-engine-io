@@ -1,0 +1,6 @@
+FROM node:12-slim
+
+RUN npm install socket.io
+COPY serve.js serve.js
+
+ENTRYPOINT ["node", "serve.js"]

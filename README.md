@@ -98,6 +98,11 @@ npm install socket.io
 node serve.js
 # DEBUG=socket.io* node serve.js  # as an alternative
 ```
+or
+```bash
+docker build -t socketio -f Dockerfile.node-server .
+docker run --rm -p 5000:5000 socketio
+```
 
 ### Send payload
 
@@ -109,6 +114,13 @@ python3.7 -m venv .env || virtualenv -p `which python3` .env
 pip install requests
 python -i kill_socket_io.py  # Start interactive session
 ```
+or
+```bash
+docker build -t kill-socket-io -f Dockerfile.kill-socket-io .
+docker run --rm --network=host -it kill-socket-io
+```
+
+
 Within the interactive console you can run commands like:
 ```python
 x()  # Just saves typing!

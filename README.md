@@ -28,6 +28,7 @@ Versions above 3.9.3 don't use `errors='ignore'` so we don't put non-ASCII chara
 
 Payload `many_tiny_packets`: `2:422:422:422:422:422:42...`
 
+From 3.10.0, the number of packets in a payload was capped at 16 (non-configurable) as a response to my vulnerability report.
 An alternative is to send one giant packet with an integer payload:
 
 Payload `giant_packet`: `99999991:42222222222222222222...`
@@ -72,6 +73,8 @@ With `many_tiny_packets`, the node process OOMs because of [a 2016 change to soc
 
 With `many_heartbeats` (`1:21:21:21:21:21:21:21:21:2...`), each ping causes the server to create a pong packet object and add it to a buffer array. These buffered pong responses and their handling cause the OOM.
 
+The `giant_packet` payload attacks [look up id](https://github.com/socketio/socket.io-parser/blob/652402a8568c2138da3c27c96756b32efca6c4bf/index.js#L314).
+
 ## Run
 
 ### Test server
@@ -110,7 +113,7 @@ Within the interactive console you can run commands like:
 ```python
 x()  # Just saves typing!
 attack('http://127.0.0.1:5000', make_payload=many_tiny_packets)
-oom_nodejs()
+oom_nodejs_all()
 oom_nodejs(make_payload=many_heartbeats)
 oom_nodejs(make_payload=giant_packet)
 ```
@@ -121,4 +124,4 @@ Of course, you can instead do `python -c 'import kill_socket_io as ksi; ksi.x()'
 * Use SockJS instead of SocketIO
 * Set `max_http_buffer_size` to a sensible value
 * Improve library performance
-* Restrict number of packets per payload (doesn't protect from `giant_packet`)
+* Restrict number of packets per payload (done in python-engineio v3.10.0+, doesn't protect from `giant_packet`)

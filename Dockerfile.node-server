@@ -3,4 +3,4 @@ FROM node:12-slim
 RUN npm install socket.io
 COPY serve.js serve.js
 
-ENTRYPOINT ["node", "serve.js"]
+ENTRYPOINT ["node", "--inspect=0.0.0.0:9229", "serve.js"]

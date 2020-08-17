@@ -129,7 +129,12 @@ oom_nodejs_all()
 oom_nodejs(make_payload=many_heartbeats)
 oom_nodejs(make_payload=giant_packet)
 ```
-Of course, you can instead do `python -c 'import kill_socket_io as ksi; ksi.x()'`.
+
+OR use the CLI:
+
+```
+python kill_socket_io.py -h
+```
 
 ## Survival
 

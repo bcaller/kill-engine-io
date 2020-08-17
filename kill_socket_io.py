@@ -164,7 +164,12 @@ def main():
     parser.add_argument("-t", "--timeout", default=DEFAULT_TIMEOUT, help="Time out the request after this many seconds", type=int)
     parser.add_argument("-H", "--header", nargs=2, action='append', help="Headers to add to all requests. --header NAME VALUE --header NAME2 VALUE2")
     args = parser.parse_args()
-    oom_nodejs_all(args.host, args.max_length, args.path, args.timeout, args.header)
+    headers = None
+    if args.header:
+        headers = {}
+        for k, v in args.header:
+            headers[k] = v
+    oom_nodejs_all(args.host, args.max_length, args.path, args.timeout, headers)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:

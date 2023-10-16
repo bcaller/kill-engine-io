@@ -1,4 +1,7 @@
 # kill-engine-io
+
+[Blog post](https://blog.caller.xyz/socketio-engineio-dos/)
+
 DoS [python-engineio](https://github.com/miguelgrinberg/python-engineio) / [python-socketio](https://github.com/miguelgrinberg/python-socketio) / [Flask-SocketIO](https://github.com/miguelgrinberg/Flask-SocketIO) via the long polling transport with a single POST request. Also nodejs [socket.io-parser](https://github.com/socketio/socket.io-parser) can be DoSed via the same transport.
 
 By default engineio's `max_http_buffer_size` is set to [1e8 = 100MB](https://github.com/miguelgrinberg/python-engineio/blob/bb2401354c3b7c3cf6a5577db83cc51ae071836e/engineio/server.py#L84) bytes.
